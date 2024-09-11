@@ -1,0 +1,27 @@
+#!pip install tensorflow
+#!pip install tensorflow.hub
+#!pip install tensorflow.datasets
+import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+import tensorflow_datasets as tfds
+train_data,val_data,test_data=tfds.load(name="imdb_reviews",
+                                        split=("train","test[:40%]","test[40%:]"),
+                                        as_supervised=True)
+print(train_data)
+text,label=next(iter(train_data.batch(5)))
+label
+text
+from tensorflow import keras
+hub_layer = hub.KerasLayer("https://kaggle.com/models/google/gnews-swivel/frameworks/TensorFlow2/variations/tf2-preview-20dim/versions/1", output_shape=[20],
+                           input_shape=[], dtype=tf.string)
+
+model = keras.Sequential()
+model.add(hub_layer)
+model.add(keras.layers.Dense(16, activation='relu'))
+model.add(keras.layers.Dense(1, activation='sigmoid'))
+
+model.summary()
+model.compile(optimizer = 'adam',loss = tf.keras.losses.BinaryCrossentropy(from_logits=True),metrics = ['accuracy'])
+history = model.fit(train_data.shuffle(10000).batch(100), epochs = 25, validation_data = val_data.batch(100),verbose = 1)
+results = model.evaluate(test_data.batch(100), verbose = 2)
